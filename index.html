@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<title>Drag and drop characters with a selection</title>
+		<style>
+			* {
+				box-sizing: border-box;
+			}
+			body {
+				font-family: sans-serif;
+				margin: 0;
+				padding: 0;
+			}
+			#controls {
+				padding: 10px;
+				background: #eee;
+			}
+			#main-container {
+				width: 100vw;
+				height: calc(100vh - 60px);
+				border: 1px solid #ccc;
+				display: grid;
+				gap: 1px;
+			}
+			.cell {
+				width: 40px;
+				height: 40px;
+				border: 1px solid #eee;
+				background: #f9f9f9;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+			}
+			.char {
+				font-size: 20px;
+				user-select: none;
+				cursor: move;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="controls">
+			<input type="text" id="text-input" placeholder="Введіть текст" />
+			<button id="submit-button">Place characters</button>
+		</div>
+		<div id="main-container"></div>
+
+		<script>
+			const cellSize = 40
+			const mainContainer = document.getElementById("main-container")
+
+			function createGrid() {
+				mainContainer.innerHTML = ""
+				const containerWidth = mainContainer.clientWidth
+				const containerHeight = mainContainer.clientHeight
+				const columns = Math.floor(containerWidth / cellSize)
+				const rows = Math.floor(containerHeight / cellSize)
+				const totalCells = columns * rows
+
+				mainContainer.style.gridTemplateColumns = `repeat(${columns}, ${cellSize}px)`
+
+				for (let i = 0; i < totalCells; i++) {
+					const cell = document.createElement("div")
+					cell.className = "cell"
+					cell.dataset.index = i
+					cell.addEventListener("dragover", dragOverHandler)
+					cell.addEventListener("drop", dropHandler)
+					mainContainer.appendChild(cell)
+				}
+			}
+
+			window.addEventListener("load", createGrid)
+			window.addEventListener("resize", createGrid)
+
+			const submitButton = document.getElementById("submit-button")
+			submitButton.addEventListener("click", () => {
+				const text = document.getElementById("text-input").value
+				const cells = mainContainer.querySelectorAll(".cell")
+				cells.forEach((cell) => (cell.innerHTML = ""))
+				for (let i = 0; i < cells.length && i < text.length; i++) {
+					const charSpan = document.createElement("span")
+					charSpan.className = "char"
+					charSpan.textContent = text[i]
+					charSpan.draggable = true
+					charSpan.addEventListener("dragstart", dragStartHandler)
+					cells[i].appendChild(charSpan)
+				}
+			})
+
+			let draggedChar = null
+
+			function dragStartHandler(e) {
+				draggedChar = this
+				e.dataTransfer.setData("text/plain", "")
+			}
+
+			function dragOverHandler(e) {
+				e.preventDefault()
+				e.dataTransfer.dropEffect = "move"
+			}
+
+			function dropHandler(e) {
+				e.preventDefault()
+				const targetCell = this
+				const sourceCell = draggedChar.parentElement
+
+				if (targetCell === sourceCell) {
+					return
+				}
+
+				if (targetCell.firstChild && draggedChar) {
+					const targetChar = targetCell.firstChild
+					sourceCell.removeChild(draggedChar)
+					targetCell.removeChild(targetChar)
+					sourceCell.appendChild(targetChar)
+					targetCell.appendChild(draggedChar)
+				} else if (draggedChar) {
+					sourceCell.removeChild(draggedChar)
+					targetCell.appendChild(draggedChar)
+				}
+				draggedChar = null
+			}
+		</script>
+	</body>
+</html>
